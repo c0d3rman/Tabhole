@@ -17,15 +17,17 @@ chrome.browserAction.onClicked.addListener (tab) ->
 				when "first" then 0
 				when "last" then -1
 			console.log "#{settings.get "movedTabLocation"} -> #{destination}"
-			chrome.tabs.move tabIdInHole, windowId: tab.windowId, index: destination
+			chrome.tabs.get tabIdInHole, (tab) ->
+				if tab.windowId isnt currentTab.windowId or tab.index isnt currentTab.index
+					chrome.tabs.move tabIdInHole, windowId: currentTab.windowId, index: destination
 
-			chrome.browserAction.setIcon path: "icons/empty-128.png"
-			chrome.browserAction.setTitle title: "Tabhole - click to store tab"
+				chrome.browserAction.setIcon path: "icons/empty-128.png"
+				chrome.browserAction.setTitle title: "Tabhole - click to store tab"
 
-			if settings.get "focusAfterMove"
-				chrome.tabs.update tabIdInHole, selected: true
-			
-			tabIdInHole = -1
+				if settings.get "focusAfterMove"
+					chrome.tabs.update tabIdInHole, selected: true
+				
+				tabIdInHole = -1
 	else
 		getCurrentTab (currentTab) ->
 			chrome.browserAction.setIcon path: "icons/full-128.png"
