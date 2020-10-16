@@ -8,6 +8,17 @@ getCurrentTab = (callback) ->
 	chrome.tabs.query {currentWindow: yes, active: yes}, (tabs) ->
 		callback tabs[0]
 
+# Dumps hole contents, does not handle tab movement
+emptyHole = ->
+	chrome.browserAction.setIcon path: "icons/empty-128.png"
+	chrome.browserAction.setTitle title: "Tabhole - click to store tab"
+	tabIdInHole = -1
+
+# If a tab is closed before it's taken out of the hole, empty the hole
+chrome.tabs.onRemoved.addListener (tabid, removeInfo) ->
+	if tabid is tabIdInHole
+		emptyHole()
+
 chrome.browserAction.onClicked.addListener (tab) ->
 	if tabIdInHole > -1
 		getCurrentTab (currentTab) ->
@@ -21,13 +32,10 @@ chrome.browserAction.onClicked.addListener (tab) ->
 				if tab.windowId isnt currentTab.windowId or tab.index isnt currentTab.index
 					chrome.tabs.move tabIdInHole, windowId: currentTab.windowId, index: destination
 
-				chrome.browserAction.setIcon path: "icons/empty-128.png"
-				chrome.browserAction.setTitle title: "Tabhole - click to store tab"
-
 				if settings.get "focusAfterMove"
 					chrome.tabs.update tabIdInHole, selected: true
 				
-				tabIdInHole = -1
+				emptyHole()
 	else
 		getCurrentTab (currentTab) ->
 			chrome.browserAction.setIcon path: "icons/full-128.png"
