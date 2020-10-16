@@ -22,13 +22,22 @@ chrome.tabs.onRemoved.addListener (tabid, removeInfo) ->
 chrome.browserAction.onClicked.addListener (tab) ->
 	if tabIdInHole > -1
 		getCurrentTab (currentTab) ->
-			destination = switch settings.get "movedTabLocation"
-				when "after" then currentTab.index + 1
-				when "before" then currentTab.index
-				when "first" then 0
-				when "last" then -1
-			console.log "#{settings.get "movedTabLocation"} -> #{destination}"
 			chrome.tabs.get tabIdInHole, (tab) ->
+				movedTabLocation = settings.get "movedTabLocation"
+
+				destination = switch movedTabLocation
+					when "after" then currentTab.index + 1
+					when "before" then currentTab.index
+					when "first" then 0
+					when "last" then -1
+
+				# Off-by-one correction for when the source and destination tabs are in the same window
+				# and the source is before the destination
+				if movedTabLocation in ["after", "before"] and currentTab.windowId is tab.windowId and tab.index < currentTab.index
+					destination--
+
+				console.log "#{movedTabLocation} -> #{destination}"
+
 				if tab.windowId isnt currentTab.windowId or tab.index isnt currentTab.index
 					chrome.tabs.move tabIdInHole, windowId: currentTab.windowId, index: destination
 

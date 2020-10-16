@@ -38,21 +38,27 @@ chrome.tabs.onRemoved.addListener(function(tabid, removeInfo) {
 chrome.browserAction.onClicked.addListener(function(tab) {
   if (tabIdInHole > -1) {
     return getCurrentTab(function(currentTab) {
-      var destination;
-      destination = (function() {
-        switch (settings.get("movedTabLocation")) {
-          case "after":
-            return currentTab.index + 1;
-          case "before":
-            return currentTab.index;
-          case "first":
-            return 0;
-          case "last":
-            return -1;
-        }
-      })();
-      console.log(`${settings.get("movedTabLocation")} -> ${destination}`);
       return chrome.tabs.get(tabIdInHole, function(tab) {
+        var destination, movedTabLocation;
+        movedTabLocation = settings.get("movedTabLocation");
+        destination = (function() {
+          switch (movedTabLocation) {
+            case "after":
+              return currentTab.index + 1;
+            case "before":
+              return currentTab.index;
+            case "first":
+              return 0;
+            case "last":
+              return -1;
+          }
+        })();
+        // Off-by-one correction for when the source and destination tabs are in the same window
+        // and the source is before the destination
+        if ((movedTabLocation === "after" || movedTabLocation === "before") && currentTab.windowId === tab.windowId && tab.index < currentTab.index) {
+          destination--;
+        }
+        console.log(`${movedTabLocation} -> ${destination}`);
         if (tab.windowId !== currentTab.windowId || tab.index !== currentTab.index) {
           chrome.tabs.move(tabIdInHole, {
             windowId: currentTab.windowId,
